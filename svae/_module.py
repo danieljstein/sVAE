@@ -346,11 +346,17 @@ class SpikeSlabVAEModule(BaseModuleClass):
         q_discrete = self.gumbel_action.get_proba()
         p_discrete = torch.sigmoid(self.action_prior_logit_weight)
 
-        kl_discrete = torch.sum(q_discrete * torch.log(q_discrete / p_discrete))
+        q_discrete_0 = 1 - q_discrete
+        p_discrete_0 = 1 - p_discrete
+
+        kl_discrete = (
+            torch.sum(q_discrete * torch.log(q_discrete / p_discrete))
+            + torch.sum(q_discrete_0 * torch.log(q_discrete_0 / p_discrete_0))
+        )
         prior_w = torch.ones_like(self.action_prior_logit_weight)
         logp_w = (
             torch.distributions.Beta(prior_w, prior_w * self.sparse_mask_penalty)
-            .log_prob(q_discrete)
+            .log_prob(p_discrete)
             .sum()
         )
 
